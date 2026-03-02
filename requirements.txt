@@ -1,0 +1,16 @@
+arxiv
+requests
+scholarly
+huggingface_hub
+PyGithub
+openai
+anthropic
+google-generativeai
+pyyaml
+matplotlib
+pandas
+numpy
+scikit-learn
+torch
+pylatex
+subprocess32

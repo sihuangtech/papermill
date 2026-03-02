@@ -1,0 +1,13 @@
+# 预设研究方向（Ideation Agent 的起点，同时也鼓励自由探索其他方向）
+research_directions:
+  - "Reinforcement Learning from Verifiable Rewards (RLVR)"
+  - "LLM reasoning and chain-of-thought"
+  - "AI agents and tool use"
+  # 可继续添加更多方向
+
+max_concurrent_pipelines: 3       # 最大并发假设数（跨假设并发）
+llm_model: "gpt-4o"               # 默认使用的 LLM
+max_ideas_per_cycle: 5            # 每轮构思的假设数量
+hypothesis_review_threshold: 6   # 假设自动评审分数门槛（1-10分），低于此分数不进入流水线
+experiment_timeout_minutes: 60   # 单个实验超时时间
+auto_commit: true                 # 是否自动 commit
