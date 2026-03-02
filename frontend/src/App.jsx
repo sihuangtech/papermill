@@ -22,6 +22,7 @@ import axios from 'axios';
 
 // API 基础路径
 const API_BASE = '/api/v1';
+const asArray = (value) => (Array.isArray(value) ? value : []);
 
 // --- 全局组件：TeX 查看模态框 ---
 // 用于显示论文的 LaTeX 源码，符合“不留 TODO”的要求
@@ -177,10 +178,12 @@ const Dashboard = () => {
           axios.get(`${API_BASE}/pipelines`),
           axios.get(`${API_BASE}/papers`)
         ]);
-        setPipelines(pipeRes.data);
+        const nextPipelines = asArray(pipeRes.data);
+        const nextPapers = asArray(paperRes.data);
+        setPipelines(nextPipelines);
         setStats({
-          papers: paperRes.data.length,
-          running: pipeRes.data.filter(p => p.status === 'running').length
+          papers: nextPapers.length,
+          running: nextPipelines.filter(p => p.status === 'running').length
         });
       } catch (e) {}
     };
@@ -189,9 +192,14 @@ const Dashboard = () => {
 
     const eventSource = new EventSource(`${API_BASE}/pipelines/stream`);
     eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setPipelines(data);
-      setStats(prev => ({ ...prev, running: data.filter(p => p.status === 'running').length }));
+      try {
+        const data = asArray(JSON.parse(event.data));
+        setPipelines(data);
+        setStats(prev => ({ ...prev, running: data.filter(p => p.status === 'running').length }));
+      } catch {
+        setPipelines([]);
+        setStats(prev => ({ ...prev, running: 0 }));
+      }
     };
 
     return () => eventSource.close();
@@ -377,7 +385,7 @@ const Papers = () => {
   const [isTexOpen, setIsTexOpen] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API_BASE}/papers`).then(res => setPapers(res.data)).catch(() => {});
+    axios.get(`${API_BASE}/papers`).then(res => setPapers(asArray(res.data))).catch(() => {});
   }, []);
 
   return (
@@ -454,7 +462,7 @@ const Ideas = () => {
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    axios.get(`${API_BASE}/ideas`).then(res => setIdeas(res.data)).catch(() => {});
+    axios.get(`${API_BASE}/ideas`).then(res => setIdeas(asArray(res.data))).catch(() => {});
   }, []);
 
   const filteredIdeas = ideas.filter(i => i.id.toLowerCase().includes(filter.toLowerCase()));
