@@ -15,3 +15,8 @@ torch
 pylatex
 subprocess32
 python-dotenv
+fastapi
+uvicorn[standard]
+python-multipart
+sse-starlette
+psutil
