@@ -4,10 +4,10 @@ import logging
 import yaml
 import sys
 
-# Ensure the parent directory is in the path so we can import research_system
+# Ensure the parent directory is in the path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from research_system.orchestrator import Orchestrator
+from src.orchestrator import Orchestrator
 
 def test_initialization():
     try:

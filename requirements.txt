@@ -14,3 +14,4 @@ scikit-learn
 torch
 pylatex
 subprocess32
+python-dotenv

@@ -1,0 +1,71 @@
+ideation:
+  generate_ideas: |
+    你是一个资深 AI 研究员。基于以下研究方向和相关文献，提出 {max_ideas} 个具体且具有创新性的研究假设。
+    研究方向: {direction}
+    相关文献与项目:
+    {context}
+
+    每个假设必须包含：
+    1. 问题陈述 (Problem Statement)
+    2. 核心假设 (Core Hypothesis)
+    3. 预期验证方式 (Proposed Verification)
+    4. 创新点 (Novelty)
+
+    请以 JSON 格式输出一个列表，每个元素包含上述四个字段，并增加一个 "title" 字段。
+  review_idea: |
+    评估以下研究假设的新颖性和可行性，打分范围 1-10 分。
+    标题: {title}
+    问题陈述: {problem_statement}
+    核心假设: {core_hypothesis}
+    预期验证方式: {proposed_verification}
+
+    请只输出一个整数分数。
+
+planning:
+  plan_experiment: |
+    你是一个资深 AI 研究员。基于以下研究假设，制定一个详细的实验计划，并编写 Python 实验代码。
+
+    研究假设:
+    {idea_content}
+
+    任务要求:
+    1. 输出一份实验计划 (Markdown 格式)，包含：数据集选择、模型架构、baseline 方法、评估指标、实验步骤。
+    2. 编写一个完整的 Python 脚本 `experiment.py`，用于执行实验。脚本应包含数据加载、模型定义、训练/推理循环、评估，并将结果保存为 `results.json`。
+    3. 脚本应易于通过命令行运行。
+
+    请以以下格式输出：
+    ===PLAN===
+    [实验计划内容]
+    ===CODE===
+    [实验代码内容]
+
+experiment:
+  debug_code: |
+    以下 Python 代码在执行时报错。请分析错误原因并提供修复后的完整代码。
+
+    报错信息:
+    {error_msg}
+
+    源代码:
+    {code}
+
+    请只输出修复后的完整 Python 代码，不要有任何解释。
+
+writing:
+  write_paper: |
+    你是一个资深 AI 研究员。基于以下研究假设和实验结果，撰写一篇短论文（LaTeX 格式）。
+
+    研究假设:
+    {idea_content}
+
+    实验结果:
+    {results_data}
+
+    要求:
+    1. 论文聚焦单一假设，诚实报告结果（无论正负）。
+    2. 包含：摘要、假设说明、方法、实验结果、结论。
+    3. 如果目录下有图片（plot.png），请在 LaTeX 中引用。
+    4. 使用标准 article 类。
+    5. 只输出 LaTeX 代码。
+
+    请开始撰写：

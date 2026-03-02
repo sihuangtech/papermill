@@ -9,9 +9,11 @@ from typing import Dict
 from .llm_client import call_llm
 
 class WritingAgent:
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, prompts_path: str = "prompts.yaml"):
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
+        with open(prompts_path, 'r', encoding='utf-8') as f:
+            self.prompts = yaml.safe_load(f)['writing']
         self.logger = logging.getLogger(__name__)
         self._check_pdflatex()
 
@@ -39,30 +41,16 @@ class WritingAgent:
             results_data = json.load(f)
 
         idea_id = os.path.basename(results_file).replace(".json", "")
-        latex_dir = f"research_system/workspace/latex/{idea_id}"
+        latex_dir = f"src/workspace/latex/{idea_id}"
         os.makedirs(latex_dir, exist_ok=True)
 
         # 生成图表
         self._generate_plots(results_data, latex_dir)
 
-        prompt = f"""
-你是一个资深 AI 研究员。基于以下研究假设和实验结果，撰写一篇短论文（LaTeX 格式）。
-
-研究假设:
-{idea_content}
-
-实验结果:
-{json.dumps(results_data, indent=2)}
-
-要求:
-1. 论文聚焦单一假设，诚实报告结果（无论正负）。
-2. 包含：摘要、假设说明、方法、实验结果、结论。
-3. 如果目录下有图片（plot.png），请在 LaTeX 中引用。
-4. 使用标准 article 类。
-5. 只输出 LaTeX 代码。
-
-请开始撰写：
-"""
+        prompt = self.prompts['write_paper'].format(
+            idea_content=idea_content,
+            results_data=json.dumps(results_data, indent=2)
+        )
         try:
             latex_code = call_llm(prompt, model=self.config.get('llm_model', 'gpt-4o'))
             if "```latex" in latex_code:
@@ -120,4 +108,4 @@ class WritingAgent:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     agent = WritingAgent("config.yaml")
-    # agent.write_paper("research_system/workspace/ideas/idea_some.md", "research_system/workspace/results/some.json")
+    # agent.write_paper("src/workspace/ideas/idea_some.md", "src/workspace/results/some.json")

@@ -5,6 +5,9 @@ import time
 import concurrent.futures
 from typing import List
 import subprocess
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     from agents.ideation_agent import IdeationAgent
@@ -18,7 +21,7 @@ except ImportError:
     from .agents.writing_agent import WritingAgent
 
 class Orchestrator:
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config.yaml", prompts_path: str = "prompts.yaml"):
         self._ensure_directories()
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
@@ -26,10 +29,10 @@ class Orchestrator:
         self.setup_logging()
         self.logger = logging.getLogger(__name__)
 
-        self.ideation_agent = IdeationAgent(config_path)
-        self.planning_agent = PlanningAgent(config_path)
-        self.experiment_agent = ExperimentAgent(config_path)
-        self.writing_agent = WritingAgent(config_path)
+        self.ideation_agent = IdeationAgent(config_path, prompts_path)
+        self.planning_agent = PlanningAgent(config_path, prompts_path)
+        self.experiment_agent = ExperimentAgent(config_path, prompts_path)
+        self.writing_agent = WritingAgent(config_path, prompts_path)
 
         self.max_concurrent = self.config.get('max_concurrent_pipelines', 3)
         self.auto_commit = self.config.get('auto_commit', True)
@@ -37,12 +40,12 @@ class Orchestrator:
     def _ensure_directories(self):
         """确保工作目录存在"""
         dirs = [
-            "research_system/workspace/ideas",
-            "research_system/workspace/memory",
-            "research_system/workspace/experiments",
-            "research_system/workspace/results",
-            "research_system/workspace/references",
-            "research_system/workspace/latex"
+            "src/workspace/ideas",
+            "src/workspace/memory",
+            "src/workspace/experiments",
+            "src/workspace/results",
+            "src/workspace/references",
+            "src/workspace/latex"
         ]
         for d in dirs:
             os.makedirs(d, exist_ok=True)
@@ -92,7 +95,7 @@ class Orchestrator:
         """提交实验结果"""
         try:
             idea_id = os.path.basename(idea_file).replace(".md", "")
-            subprocess.run(["git", "add", "research_system/workspace/"], check=True)
+            subprocess.run(["git", "add", "src/workspace/"], check=True)
             subprocess.run(["git", "commit", "-m", f"Completed research pipeline for {idea_id}"], check=True)
             self.logger.info(f"Git commit 成功: {idea_id}")
         except Exception as e:
@@ -109,8 +112,8 @@ class Orchestrator:
 
                 # 获取待处理的想法文件
                 idea_files = [
-                    os.path.join("research_system/workspace/ideas", f)
-                    for f in os.listdir("research_system/workspace/ideas")
+                    os.path.join("src/workspace/ideas", f)
+                    for f in os.listdir("src/workspace/ideas")
                     if f.endswith(".md")
                 ]
 
@@ -118,7 +121,7 @@ class Orchestrator:
                 pending_ideas = []
                 for f in idea_files:
                     idea_id = os.path.basename(f).replace("idea_", "").replace(".md", "")
-                    if not os.path.exists(f"research_system/workspace/latex/{idea_id}"):
+                    if not os.path.exists(f"src/workspace/latex/{idea_id}"):
                         pending_ideas.append(f)
 
                 if not pending_ideas:

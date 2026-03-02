@@ -11,11 +11,13 @@ from typing import List, Dict
 from .llm_client import call_llm
 
 class IdeationAgent:
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, prompts_path: str = "prompts.yaml"):
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
+        with open(prompts_path, 'r', encoding='utf-8') as f:
+            self.prompts = yaml.safe_load(f)['ideation']
         self.logger = logging.getLogger(__name__)
-        self.memory_path = "research_system/workspace/memory/processed_papers.json"
+        self.memory_path = "src/workspace/memory/processed_papers.json"
         self._load_memory()
 
     def _load_memory(self):
@@ -126,20 +128,11 @@ class IdeationAgent:
                 context_list.append(f"- {l['source']}: {l['title']} ({summary[:200]}...)")
             context = "\n".join(context_list)
 
-            prompt = f"""
-你是一个资深 AI 研究员。基于以下研究方向和相关文献，提出 {self.config.get('max_ideas_per_cycle', 5)} 个具体且具有创新性的研究假设。
-研究方向: {direction}
-相关文献与项目:
-{context}
-
-每个假设必须包含：
-1. 问题陈述 (Problem Statement)
-2. 核心假设 (Core Hypothesis)
-3. 预期验证方式 (Proposed Verification)
-4. 创新点 (Novelty)
-
-请以 JSON 格式输出一个列表，每个元素包含上述四个字段，并增加一个 "title" 字段。
-"""
+            prompt = self.prompts['generate_ideas'].format(
+                max_ideas=self.config.get('max_ideas_per_cycle', 5),
+                direction=direction,
+                context=context
+            )
             try:
                 response = call_llm(prompt, model=self.config.get('llm_model', 'gpt-4o'))
                 # 提取 JSON 部分
@@ -162,15 +155,12 @@ class IdeationAgent:
 
     def review_idea(self, idea: Dict) -> int:
         """对想法进行自我打分"""
-        prompt = f"""
-评估以下研究假设的新颖性和可行性，打分范围 1-10 分。
-标题: {idea.get('title')}
-问题陈述: {idea.get('Problem Statement')}
-核心假设: {idea.get('Core Hypothesis')}
-预期验证方式: {idea.get('Proposed Verification')}
-
-请只输出一个整数分数。
-"""
+        prompt = self.prompts['review_idea'].format(
+            title=idea.get('title'),
+            problem_statement=idea.get('Problem Statement'),
+            core_hypothesis=idea.get('Core Hypothesis'),
+            proposed_verification=idea.get('Proposed Verification')
+        )
         try:
             score_str = call_llm(prompt, model=self.config.get('llm_model', 'gpt-4o'), max_tokens=10).strip()
             return int(''.join(filter(str.isdigit, score_str)))
@@ -179,7 +169,7 @@ class IdeationAgent:
 
     def _save_idea_to_file(self, idea: Dict):
         idea_id = idea.get('title', 'untitled').replace(' ', '_').lower()
-        filepath = f"research_system/workspace/ideas/idea_{idea_id}.md"
+        filepath = f"src/workspace/ideas/idea_{idea_id}.md"
         content = f"""# {idea.get('title')}
 
 ## 问题陈述

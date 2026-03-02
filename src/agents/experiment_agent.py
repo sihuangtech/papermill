@@ -8,9 +8,11 @@ from typing import Dict
 from .llm_client import call_llm
 
 class ExperimentAgent:
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, prompts_path: str = "prompts.yaml"):
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
+        with open(prompts_path, 'r', encoding='utf-8') as f:
+            self.prompts = yaml.safe_load(f)['experiment']
         self.logger = logging.getLogger(__name__)
 
     def run_experiment(self, exp_dir: str) -> str:
@@ -43,7 +45,7 @@ class ExperimentAgent:
                     if os.path.exists(results_path):
                         # 拷贝结果到全局 results 目录
                         idea_id = os.path.basename(exp_dir)
-                        global_results_path = f"research_system/workspace/results/{idea_id}.json"
+                        global_results_path = f"src/workspace/results/{idea_id}.json"
                         with open(results_path, 'r') as f:
                             res_data = json.load(f)
                         with open(global_results_path, 'w') as f:
@@ -73,17 +75,7 @@ class ExperimentAgent:
         with open(code_path, 'r', encoding='utf-8') as f:
             code = f.read()
 
-        prompt = f"""
-以下 Python 代码在执行时报错。请分析错误原因并提供修复后的完整代码。
-
-报错信息:
-{error_msg}
-
-源代码:
-{code}
-
-请只输出修复后的完整 Python 代码，不要有任何解释。
-"""
+        prompt = self.prompts['debug_code'].format(error_msg=error_msg, code=code)
         try:
             fixed_code = call_llm(prompt, model=self.config.get('llm_model', 'gpt-4o'))
             if "```python" in fixed_code:
@@ -100,4 +92,4 @@ class ExperimentAgent:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     agent = ExperimentAgent("config.yaml")
-    # agent.run_experiment("research_system/workspace/experiments/some_exp")
+    # agent.run_experiment("src/workspace/experiments/some_exp")
