@@ -56,7 +56,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Removed the original monolithic FARS agents and orchestrator after the auditable workflow architecture replaced them.
 - Removed automatic installation of heavyweight system dependencies from the paper-writing path.
 
-## Early development (unversioned)
+## 0.1.0 - 2026-06-22
+
+This version is reconstructed from the first FARS and research-workflow commits; the original repository did not create a `v0.1.0` tag.
 
 ### 2026-06-22
 
