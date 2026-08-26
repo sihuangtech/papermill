@@ -15,7 +15,9 @@
     "themeSystem": "System",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "githubRepositoryLabel": "Open the project repository on GitHub in a new tab"
+    "githubRepositoryLabel": "Open the project repository on GitHub in a new tab",
+    "bilibiliLabel": "Open Bilibili page in a new tab",
+    "xiaohongshuLabel": "Open Xiaohongshu page in a new tab"
   },
   "runtime": {
     "cloud": "Cloud agent",

@@ -10,6 +10,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { FaGithub } from 'react-icons/fa6';
+import { SiBilibili, SiXiaohongshu } from 'react-icons/si';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import { api } from '../api/client';
@@ -21,6 +22,8 @@ type AppShellProps = { children: ReactNode };
 type NavigationItem = { to: string; label: string; icon: LucideIcon };
 
 const GITHUB_REPOSITORY = 'https://github.com/sihuangtech/sk-agentic-research';
+const BILIBILI_URL = 'https://space.bilibili.com/3546644962347701';
+const XIAOHONGSHU_URL = 'https://www.xiaohongshu.com/user/profile/6825745a000000000e01ee38';
 
 export default function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation();
@@ -34,7 +37,7 @@ export default function AppShell({ children }: AppShellProps) {
   ];
 
   useEffect(() => {
-    api.get('/system/status').then(({ data }) => setRuntime(data.runtime || null)).catch(() => {});
+    api.get('/system/status').then(({ data }) => setRuntime(data.runtime || null)).catch(() => { });
   }, []);
 
   return (
@@ -70,7 +73,7 @@ export default function AppShell({ children }: AppShellProps) {
           <p className="px-2 text-[11px] leading-5 text-slate-500">
             {runtime?.mode === 'desktop' ? t('app.safetyDesktop') : t('app.safetyCloud')}
           </p>
-          <GitHubLink />
+          <SocialLinks />
         </div>
       </aside>
 
@@ -85,7 +88,7 @@ export default function AppShell({ children }: AppShellProps) {
       <main className="app-main min-h-screen px-4 pb-28 pt-6 md:px-8 lg:ml-60 lg:px-12 lg:pb-12 lg:pt-10">
         {children}
         <footer className="mt-10 flex justify-center lg:hidden">
-          <GitHubLink />
+          <SocialLinks />
         </footer>
       </main>
 
@@ -101,18 +104,38 @@ export default function AppShell({ children }: AppShellProps) {
   );
 }
 
-function GitHubLink() {
+function SocialLinks() {
   const { t } = useTranslation();
   return (
-    <a
-      href={GITHUB_REPOSITORY}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="github-link"
-      aria-label={t('app.githubRepositoryLabel')}
-    >
-      <FaGithub size={16} aria-hidden="true" />
-    </a>
+    <div className="flex items-center justify-center gap-2">
+      <a
+        href={GITHUB_REPOSITORY}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="social-link"
+        aria-label={t('app.githubRepositoryLabel')}
+      >
+        <FaGithub size={16} aria-hidden="true" />
+      </a>
+      <a
+        href={BILIBILI_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="social-link"
+        aria-label={t('app.bilibiliLabel')}
+      >
+        <SiBilibili size={16} aria-hidden="true" />
+      </a>
+      <a
+        href={XIAOHONGSHU_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="social-link"
+        aria-label={t('app.xiaohongshuLabel')}
+      >
+        <SiXiaohongshu size={16} aria-hidden="true" />
+      </a>
+    </div>
   );
 }
 

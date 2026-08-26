@@ -75,9 +75,8 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .theme-switcher-compact { padding: 0.45rem; }
 .theme-switcher-compact select { max-width: 4.8rem; }
 .mobile-nav { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 0.2rem; border-radius: 0.7rem; padding: 0.5rem 0.2rem; color: var(--muted); font-size: 0.58rem; font-weight: 700; }
-.mobile-nav-active { color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.github-link { display: flex; width: 2.25rem; height: 2.25rem; margin-inline: auto; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 0.7rem; color: var(--muted); }
-.github-link:hover { border-color: var(--accent); color: var(--ink); background: color-mix(in srgb, var(--accent) 8%, transparent); transform: translateY(-1px); }
+.social-link, .github-link { display: flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 0.7rem; color: var(--muted); transition: all 0.15s ease; }
+.social-link:hover, .github-link:hover { border-color: var(--accent); color: var(--ink); background: color-mix(in srgb, var(--accent) 8%, transparent); transform: translateY(-1px); }
 
 .command-deck, .research-dossier, .empty-workbench, .doctor-details { border-color: var(--line); background: var(--surface); }
 .command-icon { display: grid; width: 2.25rem; height: 2.25rem; flex: 0 0 auto; place-items: center; border-radius: 50%; color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 12%, transparent); }

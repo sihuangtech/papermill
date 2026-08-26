@@ -15,7 +15,9 @@
     "themeSystem": "跟随系统",
     "themeLight": "浅色",
     "themeDark": "深色",
-    "githubRepositoryLabel": "在新标签页打开项目的 GitHub 仓库"
+    "githubRepositoryLabel": "在新标签页打开项目的 GitHub 仓库",
+    "bilibiliLabel": "在新标签页打开哔哩哔哩主页",
+    "xiaohongshuLabel": "在新标签页打开小红书主页"
   },
   "runtime": {
     "cloud": "云端 Agent",
