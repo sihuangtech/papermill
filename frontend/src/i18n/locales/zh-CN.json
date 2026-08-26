@@ -14,7 +14,8 @@
     "theme": "外观主题",
     "themeSystem": "跟随系统",
     "themeLight": "浅色",
-    "themeDark": "深色"
+    "themeDark": "深色",
+    "githubRepositoryLabel": "在新标签页打开项目的 GitHub 仓库"
   },
   "runtime": {
     "cloud": "云端 Agent",

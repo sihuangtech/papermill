@@ -66,6 +66,7 @@ ipython_config.py
 node_modules/
 frontend/node_modules/
 frontend/dist/
+backend/static/
 .npm/
 .pnpm-store/
 .yarn/cache/
@@ -128,5 +129,4 @@ data/workspace/*
 .cursorignore
 .cursorindexingignore
 
-# Lockfiles and backend/static are intentionally tracked for reproducible
-# installs and for serving the built Web UI directly from FastAPI.
+# Lockfiles are intentionally tracked for reproducible installs.

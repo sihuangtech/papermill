@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Added an explicit cloud/desktop runtime model and a status API that reports compute and data location without exposing credentials.
 - Added deterministic batch and run identifiers so recovered workflows do not duplicate completed research work.
 - Added runtime tests and shared frontend types for the new execution model.
+- Added a responsive GitHub repository icon linking to the project source.
 
 ### Changed
 

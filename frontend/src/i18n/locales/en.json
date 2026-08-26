@@ -14,7 +14,8 @@
     "theme": "Appearance",
     "themeSystem": "System",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "githubRepositoryLabel": "Open the project repository on GitHub in a new tab"
   },
   "runtime": {
     "cloud": "Cloud agent",

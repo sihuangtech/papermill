@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { FaGithub } from 'react-icons/fa6';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import { api } from '../api/client';
@@ -18,6 +19,8 @@ import ThemeSwitcher from './ThemeSwitcher';
 
 type AppShellProps = { children: ReactNode };
 type NavigationItem = { to: string; label: string; icon: LucideIcon };
+
+const GITHUB_REPOSITORY = 'https://github.com/sihuangtech/sk-agentic-research';
 
 export default function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation();
@@ -67,6 +70,7 @@ export default function AppShell({ children }: AppShellProps) {
           <p className="px-2 text-[11px] leading-5 text-slate-500">
             {runtime?.mode === 'desktop' ? t('app.safetyDesktop') : t('app.safetyCloud')}
           </p>
+          <GitHubLink />
         </div>
       </aside>
 
@@ -80,6 +84,9 @@ export default function AppShell({ children }: AppShellProps) {
 
       <main className="app-main min-h-screen px-4 pb-28 pt-6 md:px-8 lg:ml-60 lg:px-12 lg:pb-12 lg:pt-10">
         {children}
+        <footer className="mt-10 flex justify-center lg:hidden">
+          <GitHubLink />
+        </footer>
       </main>
 
       <nav className="mobile-dock fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-2xl border p-1.5 lg:hidden" aria-label={t('app.primaryNavigation')}>
@@ -91,6 +98,21 @@ export default function AppShell({ children }: AppShellProps) {
         ))}
       </nav>
     </div>
+  );
+}
+
+function GitHubLink() {
+  const { t } = useTranslation();
+  return (
+    <a
+      href={GITHUB_REPOSITORY}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="github-link"
+      aria-label={t('app.githubRepositoryLabel')}
+    >
+      <FaGithub size={16} aria-hidden="true" />
+    </a>
   );
 }
 
