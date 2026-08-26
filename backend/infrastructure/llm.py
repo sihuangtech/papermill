@@ -1,4 +1,4 @@
-"""多模型调用适配器；上层 Agent 只依赖 LlmClient 协议。"""
+"""OpenAI Agents SDK 模型适配器；业务层只依赖窄 LlmClient 协议。"""
 
 from __future__ import annotations
 
@@ -8,8 +8,16 @@ import os
 import re
 from typing import Any, Protocol
 
-from anthropic import Anthropic
-from openai import OpenAI
+from agents import (
+    Agent,
+    AsyncOpenAI,
+    ModelSettings,
+    OpenAIChatCompletionsModel,
+    OpenAIResponsesModel,
+    RunConfig,
+    Runner,
+)
+from agents.extensions.models.litellm_model import LitellmModel
 
 logger = logging.getLogger(__name__)
 
@@ -19,79 +27,83 @@ class LlmClient(Protocol):
         """返回模型生成的纯文本。"""
 
 
-class ProviderLlmClient:
-    """根据模型名前缀选择官方 SDK。"""
+ROLE_INSTRUCTIONS = {
+    "research-generator": "你是严谨的科研生成 Agent。只依据输入证据工作，并严格遵守用户要求的输出格式。",
+    "skeptical-reviewer": "你是独立的科研审稿 Agent。优先寻找不可证伪、证据不足和实验泄漏问题。",
+}
 
-    def __init__(self, model: str, default_max_tokens: int, provider: str):
+
+class AgentsSdkLlmClient:
+    """统一使用 Agents SDK；第三方模型交给 SDK 自带的 LiteLLM 适配层。"""
+
+    def __init__(
+        self,
+        model: str,
+        default_max_tokens: int,
+        provider: str,
+        role: str = "research-generator",
+    ):
         self.model = model
         self.default_max_tokens = default_max_tokens
         self.provider = provider
+        self.role = role
+        self._sdk_model = None
+
+    @property
+    def sdk_model(self):
+        """首次真正调用模型时再校验凭据，允许新安装先进入设置页。"""
+        if self._sdk_model is None:
+            self._sdk_model = self._build_model()
+        return self._sdk_model
 
     def complete(self, prompt: str, max_tokens: int = 6000) -> str:
         max_tokens = min(max_tokens, self.default_max_tokens)
-        if self.provider == "anthropic":
-            return self._anthropic(prompt, max_tokens)
-        if self.provider == "google":
-            return self._gemini(prompt, max_tokens)
-        return self._openai(prompt, max_tokens)
+        agent = Agent(
+            name=self.role,
+            instructions=ROLE_INSTRUCTIONS.get(self.role, ROLE_INSTRUCTIONS["research-generator"]),
+            model=self.sdk_model,
+            model_settings=ModelSettings(max_tokens=max_tokens, include_usage=True),
+        )
+        tracing_enabled = (
+            self.provider == "openai" and os.getenv("OPENAI_AGENTS_TRACING_ENABLED") == "1"
+        )
+        result = Runner.run_sync(
+            agent,
+            prompt,
+            max_turns=1,
+            run_config=RunConfig(
+                tracing_disabled=not tracing_enabled,
+                trace_include_sensitive_data=False,
+                workflow_name=f"Agentic Research · {self.role}",
+            ),
+        )
+        return str(result.final_output or "")
 
-    def _openai(self, prompt: str, max_tokens: int) -> str:
-        key = os.getenv("OPENAI_API_KEY")
-        if not key:
-            raise RuntimeError("缺少 OPENAI_API_KEY")
-        client = OpenAI(api_key=key, base_url=_required_env("OPENAI_BASE_URL"))
+    def _build_model(self):
+        model = self.model or _required_env(f"{self.provider.upper()}_MODEL_ID")
+        if self.provider == "openai":
+            return self._build_openai_model(model)
+        if self.provider not in {"anthropic", "google"}:
+            raise RuntimeError(f"不支持的模型供应商: {self.provider}")
+        prefix = "anthropic" if self.provider == "anthropic" else "gemini"
+        model_name = model if "/" in model else f"{prefix}/{model}"
+        return LitellmModel(
+            model=model_name,
+            base_url=_required_env(f"{self.provider.upper()}_BASE_URL"),
+            api_key=_required_env(f"{self.provider.upper()}_API_KEY"),
+        )
+
+    def _build_openai_model(self, model: str):
+        client = AsyncOpenAI(
+            api_key=_required_env("OPENAI_API_KEY"),
+            base_url=_required_env("OPENAI_BASE_URL"),
+        )
         api_mode = _required_env("OPENAI_API_MODE")
         if api_mode == "responses":
-            response = client.responses.create(
-                model=self.model,
-                input=prompt,
-                max_output_tokens=max_tokens,
-            )
-            return response.output_text or ""
-        if api_mode != "chat_completions":
-            raise RuntimeError("OPENAI_API_MODE 必须是 responses 或 chat_completions")
-        response = client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens,
-            temperature=0.2,
-        )
-        return response.choices[0].message.content or ""
-
-    def _anthropic(self, prompt: str, max_tokens: int) -> str:
-        key = os.getenv("ANTHROPIC_API_KEY")
-        if not key:
-            raise RuntimeError("缺少 ANTHROPIC_API_KEY")
-        response = Anthropic(
-            api_key=key,
-            base_url=_required_env("ANTHROPIC_BASE_URL"),
-        ).messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            temperature=0.2,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return "".join(block.text for block in response.content if hasattr(block, "text"))
-
-    def _gemini(self, prompt: str, max_tokens: int) -> str:
-        key = os.getenv("GOOGLE_API_KEY")
-        if not key:
-            raise RuntimeError("缺少 GOOGLE_API_KEY")
-        from google import genai
-        from google.genai import types
-
-        base_url = _required_env("GOOGLE_BASE_URL")
-        http_options = types.HttpOptions(base_url=base_url)
-        with genai.Client(api_key=key, http_options=http_options) as client:
-            response = client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=0.2,
-                ),
-            )
-        return response.text or ""
+            return OpenAIResponsesModel(model=model, openai_client=client)
+        if api_mode == "chat_completions":
+            return OpenAIChatCompletionsModel(model=model, openai_client=client)
+        raise RuntimeError("OPENAI_API_MODE 必须是 responses 或 chat_completions")
 
 
 def _required_env(name: str) -> str:
@@ -106,19 +118,29 @@ def _required_env(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 def _repair_truncated_json(text: str) -> str | None:
-    if not (repaired := (text or "").rstrip()): return None
+    if not (repaired := (text or "").rstrip()):
+        return None
     stack, in_str, i = [], False, 0
     while i < len(repaired):
         if repaired[i] == "\\" and in_str:
-            i += 2; continue
-        if repaired[i] == '"': in_str = not in_str
+            i += 2
+            continue
+        if repaired[i] == '"':
+            in_str = not in_str
         elif not in_str:
-            if repaired[i] in "{[": stack.append(repaired[i])
-            elif repaired[i] == "}" and stack and stack[-1] == "{": stack.pop()
-            elif repaired[i] == "]" and stack and stack[-1] == "[": stack.pop()
+            if repaired[i] in "{[":
+                stack.append(repaired[i])
+            elif (
+                repaired[i] == "}" and stack and stack[-1] == "{"
+            ) or (
+                repaired[i] == "]" and stack and stack[-1] == "["
+            ):
+                stack.pop()
         i += 1
-    if in_str: repaired += '"'
-    if repaired and repaired[-1] == ",": repaired = repaired[:-1]
+    if in_str:
+        repaired += '"'
+    if repaired and repaired[-1] == ",":
+        repaired = repaired[:-1]
     return repaired + "".join("}" if b == "{" else "]" for b in reversed(stack))
 
 

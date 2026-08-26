@@ -5,6 +5,9 @@
     "tagline": "Local Research Workspace",
     "documentTitle": "Agentic Research | Autonomous Research Agent",
     "safetyNotice": "Running generated code locally still carries risk. Use an isolated container for production experiments.",
+    "safetyDesktop": "Research files and experiments stay on this device; only model and literature APIs use the network.",
+    "safetyCloud": "Research and experiments run on the server; model requests are sent by the server.",
+    "primaryNavigation": "Primary navigation",
     "language": "Interface language",
     "languageChinese": "Chinese",
     "languageEnglish": "English",
@@ -12,6 +15,16 @@
     "themeSystem": "System",
     "themeLight": "Light",
     "themeDark": "Dark"
+  },
+  "runtime": {
+    "cloud": "Cloud agent",
+    "desktop": "Local desktop agent",
+    "detecting": "Detecting runtime",
+    "detectingHint": "Connecting to the research runtime",
+    "server": "Compute and files are on the server",
+    "local_device": "Compute and files stay on this device",
+    "detail_cloud": "The agent, experiments, and artifacts run on the server. Durable queue: {{database}}.",
+    "detail_desktop": "Except for external model and literature APIs, the agent, experiments, and artifacts stay local. Durable queue: {{database}}."
   },
   "nav": {
     "dashboard": "Overview",
@@ -58,9 +71,12 @@
     "improvement": "Improvement",
     "successRate": "Success rate",
     "offlineDemo": "Offline Validation Demo"
+    ,"progress": "Research stage progress"
   },
   "dashboard": {
     "eyebrow": "Local Research Control Plane",
+    "eyebrow_cloud": "Server Research Control Plane",
+    "eyebrow_desktop": "Local Research Control Plane",
     "title": "Research Workflow Overview",
     "description": "See actual run states, holdout metrics, and decision gates instead of inferring progress from file existence.",
     "start": "Start",
@@ -79,6 +95,10 @@
     "submit": "Submit research",
     "reviewHint": "By default, execution pauses before experiments so you can review the plan and generated code.",
     "environment": "Environment check",
+    "runtimeLedger": "Runtime ledger",
+    "actionRequired": "Needs your review",
+    "recentRuns": "Research dossiers",
+    "emptyTitle": "No research dossiers yet",
     "healthy": "Ready",
     "optionalMissing": "Optional dependency missing",
     "needsAttention": "Needs attention",
@@ -116,6 +136,7 @@
   "providers": {
     "title": "Model Providers",
     "description": "Supports OpenAI, Anthropic Claude, and Google Gemini. Keys are stored only in the local .env file and are never returned in plaintext.",
+    "cloudManaged": "Cloud provider credentials are read only from server environment variables and cannot be edited in the web UI.",
     "savedRestarted": "Saved. The scheduler restarted.",
     "saved": "Saved and applied immediately",
     "keyConfigured": "API key configured",
@@ -142,6 +163,8 @@
     "eyebrow": "Validated Configuration",
     "title": "Settings",
     "description": "The backend validates seed isolation, threshold ranges, and resource limits when saving. An active scheduler restarts automatically to apply changes.",
+    "cloudManaged": "This is a cloud agent. To prevent regular web users from changing global credentials or experiment policy, this page is read-only. A server administrator manages environment variables and config.yaml.",
+    "serverManaged": "Server managed",
     "saving": "Saving",
     "save": "Save settings",
     "savedRestarted": "Settings saved and continuous scheduling restarted",

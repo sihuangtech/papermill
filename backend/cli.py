@@ -21,7 +21,7 @@ def configure_logging() -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="本地 AI 科研自动化工作流")
+    parser = argparse.ArgumentParser(description="Cloud-or-local AI research automation workflow")
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--prompts", default="prompts.yaml")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -59,7 +59,7 @@ def main() -> int:
     elif args.command == "demo":
         print(run_demo(runtime.workspace).model_dump_json(indent=2))
     elif args.command == "doctor":
-        print(json.dumps(diagnose(runtime.config), ensure_ascii=False, indent=2))
+        print(json.dumps(diagnose(runtime.config, runtime.context), ensure_ascii=False, indent=2))
     elif args.command == "daemon":
         _daemon(runtime)
     return 0

@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FlaskConical, Play, Square, Wrench } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { CircleAlert, FlaskConical, Pause, Play, ServerCog, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api, apiError } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import RunCard from '../components/RunCard';
-import StatusBadge from '../components/StatusBadge';
 import useRunStream from '../hooks/useRunStream';
+import type { ResearchRun, SystemStatus } from '../types';
 
 type DoctorCheck = { ok?: boolean; optional?: boolean };
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { runs, error: streamError } = useRunStream();
-  const [system, setSystem] = useState({ status: 'stopped' });
+  const stream = useRunStream();
+  const runs = stream.runs as ResearchRun[];
+  const [system, setSystem] = useState<SystemStatus>({ status: 'stopped' });
   const [doctor, setDoctor] = useState<Record<string, DoctorCheck>>({});
   const [direction, setDirection] = useState('');
   const [message, setMessage] = useState('');
@@ -22,69 +23,113 @@ export default function DashboardPage() {
     .then(([status, checks]) => { setSystem(status.data); setDoctor(checks.data); });
 
   useEffect(() => { loadSystem().catch((error) => setMessage(apiError(error))); }, []);
+
+  const pending = useMemo(() => runs.filter((run) => run.status === 'waiting_review'), [runs]);
+  const remaining = useMemo(() => runs.filter((run) => run.status !== 'waiting_review'), [runs]);
   const counts = useMemo(() => ({
     active: runs.filter((run) => ['queued', 'running', 'waiting_review'].includes(run.status)).length,
     accepted: runs.filter((run) => run.decision === 'accepted').length,
-    failed: runs.filter((run) => ['failed', 'invalid'].includes(run.status) || run.decision === 'invalid').length,
+    failed: runs.filter((run) => run.status === 'failed' || run.decision === 'invalid').length,
   }), [runs]);
 
-  const act = async (request, success) => {
+  const act = async (request: () => Promise<unknown>, success: string) => {
     setBusy(true); setMessage('');
     try { await request(); setMessage(success); await loadSystem(); }
     catch (error) { setMessage(apiError(error)); }
     finally { setBusy(false); }
   };
 
-  const createResearch = (event) => {
+  const createResearch = (event: FormEvent) => {
     event.preventDefault();
     if (!direction.trim()) return;
     act(() => api.post('/research', { direction: direction.trim() }), t('dashboard.researchSubmitted'));
   };
 
+  const runProps = {
+    busy,
+    onApprove: (id: string) => act(() => api.post(`/runs/${id}/approve`, { reviewer: system.runtime?.mode === 'desktop' ? 'desktop-user' : 'web-user' }), t('dashboard.approved')),
+    onResume: (id: string) => act(() => api.post(`/runs/${id}/resume`), t('dashboard.resumeSubmitted')),
+    onCancel: (id: string) => act(() => api.post(`/runs/${id}/cancel`), t('dashboard.cancelled')),
+  };
+
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-[1320px]">
       <PageHeader
-        eyebrow={t('dashboard.eyebrow')}
+        eyebrow={t(`dashboard.eyebrow_${system.runtime?.mode || 'cloud'}`)}
         title={t('dashboard.title')}
         description={t('dashboard.description')}
-        actions={<><StatusBadge value={system.status} />
-          <button disabled={busy} onClick={() => act(() => api.post('/system/start'), t('dashboard.schedulerStarted'))} className="action-primary"><Play size={16} />{t('dashboard.start')}</button>
-          <button disabled={busy} onClick={() => act(() => api.post('/system/stop'), t('dashboard.schedulerStopped'))} className="action-secondary"><Square size={16} />{t('dashboard.stop')}</button></>}
+        actions={(
+          <div className="flex flex-wrap gap-2">
+            <button disabled={busy || system.status === 'running'} onClick={() => act(() => api.post('/system/start'), t('dashboard.schedulerStarted'))} className="action-primary"><Play size={15} />{t('dashboard.start')}</button>
+            <button disabled={busy || system.status !== 'running'} onClick={() => act(() => api.post('/system/stop'), t('dashboard.schedulerStopped'))} className="action-secondary"><Pause size={15} />{t('dashboard.stop')}</button>
+          </div>
+        )}
       />
-      {(message || streamError) && <div className="mb-6 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">{message || streamError}</div>}
-      <section className="mb-7 grid gap-4 md:grid-cols-3">
-        <Stat label={t('dashboard.active')} value={counts.active} tone="cyan" />
-        <Stat label={t('dashboard.validated')} value={counts.accepted} tone="green" />
-        <Stat label={t('dashboard.failed')} value={counts.failed} tone="rose" />
-      </section>
-      <section className="mb-8 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <form onSubmit={createResearch} className="panel">
-          <div className="mb-4 flex items-center gap-2 text-sm font-bold"><FlaskConical size={18} className="text-cyan-300" />{t('dashboard.createDirection')}</div>
+
+      {(message || stream.error) && <div role="status" aria-live="polite" className="notice-strip mb-6 rounded-lg border px-4 py-3 text-sm">{message || stream.error}</div>}
+
+      <section className="command-deck mb-8 grid overflow-hidden rounded-2xl border lg:grid-cols-[1.55fr_1fr]">
+        <form onSubmit={createResearch} className="p-5 md:p-7">
+          <div className="mb-4 flex items-start gap-3">
+            <span className="command-icon"><Sparkles size={18} /></span>
+            <div><h2 className="font-black">{t('dashboard.createDirection')}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{t('dashboard.reviewHint')}</p></div>
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <input value={direction} onChange={(event) => setDirection(event.target.value)} placeholder={t('dashboard.directionPlaceholder')} className="input flex-1" />
-            <button disabled={busy || !direction.trim()} className="action-primary justify-center">{t('dashboard.submit')}</button>
+            <label className="sr-only" htmlFor="research-direction">{t('dashboard.createDirection')}</label>
+            <input id="research-direction" value={direction} onChange={(event) => setDirection(event.target.value)} placeholder={t('dashboard.directionPlaceholder')} className="input flex-1" />
+            <button disabled={busy || !direction.trim()} className="action-primary justify-center"><FlaskConical size={16} />{t('dashboard.submit')}</button>
           </div>
-          <p className="mt-3 text-xs text-slate-500">{t('dashboard.reviewHint')}</p>
         </form>
-        <div className="panel">
-          <div className="mb-3 flex items-center gap-2 text-sm font-bold"><Wrench size={18} className="text-amber-300" />{t('dashboard.environment')}</div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {Object.entries(doctor).map(([key, value]) => <div key={key} className="rounded-lg bg-black/20 p-2"><span className="text-slate-500">{key}</span><p className={value?.ok ? 'text-emerald-300' : value?.optional ? 'text-amber-300' : 'text-rose-300'}>{value?.ok ? t('dashboard.healthy') : value?.optional ? t('dashboard.optionalMissing') : t('dashboard.needsAttention')}</p></div>)}
-          </div>
+
+        <div className="runtime-ledger border-t p-5 lg:border-l lg:border-t-0 lg:p-7">
+          <div className="mb-4 flex items-center gap-2 text-sm font-black"><ServerCog size={17} />{t('dashboard.runtimeLedger')}</div>
+          <dl className="grid grid-cols-3 gap-4">
+            <LedgerValue label={t('dashboard.active')} value={counts.active} />
+            <LedgerValue label={t('dashboard.validated')} value={counts.accepted} />
+            <LedgerValue label={t('dashboard.failed')} value={counts.failed} tone="danger" />
+          </dl>
+          <p className="mt-5 text-[11px] leading-5 text-slate-500">{t(`runtime.detail_${system.runtime?.mode || 'cloud'}`, { database: system.runtime?.durable_backend || '—' })}</p>
         </div>
       </section>
-      <section className="space-y-4">
-        {runs.map((run) => <RunCard key={run.id} run={run} busy={busy}
-          onApprove={(id) => act(() => api.post(`/runs/${id}/approve`, { reviewer: 'desktop-user' }), t('dashboard.approved'))}
-          onResume={(id) => act(() => api.post(`/runs/${id}/resume`), t('dashboard.resumeSubmitted'))}
-          onCancel={(id) => act(() => api.post(`/runs/${id}/cancel`), t('dashboard.cancelled'))} />)}
-        {!runs.length && <div className="panel py-16 text-center text-sm text-slate-500">{t('dashboard.empty', { command: 'python -m backend.cli demo' })}</div>}
+
+      {pending.length > 0 && (
+        <section className="mb-10">
+          <SectionHeading icon={CircleAlert} title={t('dashboard.actionRequired')} count={pending.length} urgent />
+          <div className="space-y-4">{pending.map((run) => <RunCard key={run.id} run={run} prominent {...runProps} />)}</div>
+        </section>
+      )}
+
+      <section>
+        <SectionHeading icon={FlaskConical} title={t('dashboard.recentRuns')} count={remaining.length} />
+        <div className="space-y-4">{remaining.map((run) => <RunCard key={run.id} run={run} {...runProps} />)}</div>
+        {!runs.length && (
+          <div className="empty-workbench rounded-2xl border px-6 py-16 text-center">
+            <FlaskConical className="mx-auto mb-4 text-slate-400" size={28} strokeWidth={1.5} />
+            <p className="text-sm font-bold">{t('dashboard.emptyTitle')}</p>
+            <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-slate-500">{t('dashboard.empty')}</p>
+          </div>
+        )}
       </section>
+
+      <details className="doctor-details mt-8 rounded-xl border px-4 py-3">
+        <summary className="cursor-pointer text-xs font-bold">{t('dashboard.environment')}</summary>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {Object.entries(doctor).map(([key, value]) => (
+            <div key={key} className="rounded-lg border px-3 py-2 text-xs">
+              <span className="text-slate-500">{key}</span>
+              <p className={value?.ok ? 'text-emerald-600' : value?.optional ? 'text-amber-600' : 'text-rose-600'}>{value?.ok ? t('dashboard.healthy') : value?.optional ? t('dashboard.optionalMissing') : t('dashboard.needsAttention')}</p>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
 
-function Stat({ label, value, tone }) {
-  const color = { cyan: 'text-cyan-300', green: 'text-emerald-300', rose: 'text-rose-300' }[tone];
-  return <div className="panel"><p className="text-xs text-slate-500">{label}</p><p className={`mt-2 text-3xl font-black ${color}`}>{value}</p></div>;
+function LedgerValue({ label, value, tone }: { label: string; value: number; tone?: 'danger' }) {
+  return <div><dt className="text-[10px] leading-4 text-slate-500">{label}</dt><dd className={`mt-1 font-mono text-2xl font-bold ${tone === 'danger' ? 'text-rose-600' : ''}`}>{value}</dd></div>;
+}
+
+function SectionHeading({ icon: Icon, title, count, urgent = false }: { icon: typeof FlaskConical; title: string; count: number; urgent?: boolean }) {
+  return <div className="mb-4 flex items-center gap-2"><Icon size={17} className={urgent ? 'text-amber-600' : 'text-emerald-700'} /><h2 className="section-title text-lg font-black">{title}</h2><span className="count-mark rounded-full px-2 py-0.5 text-[10px] font-bold">{count}</span></div>;
 }

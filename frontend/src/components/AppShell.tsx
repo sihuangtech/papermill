@@ -1,71 +1,111 @@
 import {
+  Cloud,
   FileText,
   FlaskConical,
+  HardDrive,
   LayoutDashboard,
   ScrollText,
   Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { NavLink } from 'react-router-dom';
+import { api } from '../api/client';
+import type { RuntimeInfo } from '../types';
 import LanguageSwitcher from './LanguageSwitcher';
 import ThemeSwitcher from './ThemeSwitcher';
 
 type AppShellProps = { children: ReactNode };
+type NavigationItem = { to: string; label: string; icon: LucideIcon };
 
 export default function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation();
-  const links: Array<[string, string, LucideIcon]> = [
-    ['/', t('nav.dashboard'), LayoutDashboard],
-    ['/ideas', t('nav.ideas'), FlaskConical],
-    ['/papers', t('nav.papers'), FileText],
-    ['/logs', t('nav.logs'), ScrollText],
-    ['/settings', t('nav.settings'), Settings],
+  const [runtime, setRuntime] = useState<RuntimeInfo | null>(null);
+  const links: NavigationItem[] = [
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/ideas', label: t('nav.ideas'), icon: FlaskConical },
+    { to: '/papers', label: t('nav.papers'), icon: FileText },
+    { to: '/logs', label: t('nav.logs'), icon: ScrollText },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
+  useEffect(() => {
+    api.get('/system/status').then(({ data }) => setRuntime(data.runtime || null)).catch(() => {});
+  }, []);
+
   return (
-    <div className="app-shell min-h-screen selection:bg-cyan-300/30">
-      <aside className="app-sidebar fixed inset-y-0 left-0 z-20 hidden w-64 p-6 backdrop-blur lg:block">
-        <div className="mb-10 flex items-center gap-3 px-2">
-          <img src="/brand/app-icon.png" alt="" className="h-10 w-10 rounded-xl" />
+    <div className="app-shell min-h-screen">
+      <aside className="app-sidebar fixed inset-y-0 left-0 z-30 hidden w-60 border-r px-5 py-6 lg:flex lg:flex-col">
+        <div className="brand-lockup flex items-center gap-3 px-2">
+          <img src="/brand/app-icon.png" alt="" className="h-10 w-10 rounded-[13px]" />
           <div>
-            <p className="text-lg font-black tracking-tight">{t('app.displayName')}</p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{t('app.productType')}</p>
+            <p className="brand-name text-xl font-black tracking-tight">{t('app.displayName')}</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-slate-500">Agentic Research</p>
           </div>
         </div>
-        <nav className="space-y-2">
-          {links.map(([to, label, Icon]) => (
+
+        <nav className="mt-10 space-y-1" aria-label={t('app.primaryNavigation')}>
+          {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                isActive ? 'bg-cyan-300 text-slate-950' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
+              className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}
             >
-              <Icon size={18} /> {label}
+              <Icon size={17} strokeWidth={1.8} />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="absolute bottom-6 left-6 right-6 space-y-3">
-          <ThemeSwitcher />
-          <LanguageSwitcher />
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-5 text-slate-500">
-            {t('app.safetyNotice')}
+
+        <div className="mt-auto space-y-3">
+          <RuntimeStamp runtime={runtime} />
+          <div className="grid grid-cols-2 gap-2">
+            <ThemeSwitcher compact />
+            <LanguageSwitcher compact />
           </div>
+          <p className="px-2 text-[11px] leading-5 text-slate-500">
+            {runtime?.mode === 'desktop' ? t('app.safetyDesktop') : t('app.safetyCloud')}
+          </p>
         </div>
       </aside>
-      <div className="app-mobilebar px-4 py-3 lg:hidden">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {links.map(([to, label]) => (
-            <NavLink key={to} to={to} className="whitespace-nowrap rounded-lg bg-white/5 px-3 py-2 text-xs">
-              {label}
-            </NavLink>
-          ))}
-          <div className="ml-auto flex shrink-0 gap-2"><ThemeSwitcher compact /><LanguageSwitcher compact /></div>
+
+      <header className="app-mobilebar sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          <img src="/brand/app-icon.png" alt="" className="h-8 w-8 rounded-[10px]" />
+          <span className="brand-name font-black">{t('app.displayName')}</span>
         </div>
+        <div className="flex gap-2"><ThemeSwitcher compact /><LanguageSwitcher compact /></div>
+      </header>
+
+      <main className="app-main min-h-screen px-4 pb-28 pt-6 md:px-8 lg:ml-60 lg:px-12 lg:pb-12 lg:pt-10">
+        {children}
+      </main>
+
+      <nav className="mobile-dock fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-2xl border p-1.5 lg:hidden" aria-label={t('app.primaryNavigation')}>
+        {links.map(({ to, label, icon: Icon }) => (
+          <NavLink key={to} to={to} className={({ isActive }) => `mobile-nav ${isActive ? 'mobile-nav-active' : ''}`}>
+            <Icon size={18} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+function RuntimeStamp({ runtime }: { runtime: RuntimeInfo | null }) {
+  const { t } = useTranslation();
+  const Icon = runtime?.mode === 'desktop' ? HardDrive : Cloud;
+  return (
+    <div className="runtime-stamp flex items-start gap-3 rounded-xl border p-3">
+      <Icon size={17} className="mt-0.5 shrink-0" />
+      <div>
+        <p className="text-xs font-bold">{t(`runtime.${runtime?.mode || 'detecting'}`)}</p>
+        <p className="mt-1 text-[10px] leading-4 text-slate-500">
+          {runtime ? t(`runtime.${runtime.compute_location}`) : t('runtime.detectingHint')}
+        </p>
       </div>
-      <main className="app-main min-h-screen p-5 md:p-10 lg:ml-64 lg:p-12">{children}</main>
     </div>
   );
 }

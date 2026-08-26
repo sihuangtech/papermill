@@ -48,20 +48,21 @@ class WorkflowEngine:
         self.writing = writing
         self.logger = logging.getLogger(__name__)
 
-    def run_direction(self, direction: str, max_ideas: int | None = None) -> list[ResearchRun]:
+    def run_direction(
+        self,
+        direction: str,
+        max_ideas: int | None = None,
+        batch_id: str | None = None,
+    ) -> list[ResearchRun]:
         """从一个研究方向创建若干独立、可恢复的运行。"""
-        batch = f"{safe_identifier(direction)}-{uuid.uuid4().hex[:8]}"
+        batch = safe_identifier(batch_id) if batch_id else f"{safe_identifier(direction)}-{uuid.uuid4().hex[:8]}"
         evidence_path = self.workspace.evidence / f"{batch}.json"
-        evidence = self.literature.search(direction, evidence_path)
-        ideas = self.hypotheses.generate(
-            direction,
-            evidence,
-            max_ideas or self.config.workflow.max_ideas_per_cycle,
-            self.workspace.ideas,
-        )
+        evidence = self._load_or_search_evidence(direction, evidence_path)
+        ideas = self._load_or_generate_ideas(direction, evidence, max_ideas, batch)
         created: list[ResearchRun] = []
         for hypothesis in ideas:
-            created.append(self._create_run(direction, hypothesis, evidence))
+            run_id = f"{hypothesis.id}-{batch[-10:]}"
+            created.append(self.runs.get(run_id) or self._create_run(direction, hypothesis, evidence, run_id))
         with ThreadPoolExecutor(max_workers=self.config.workflow.max_concurrent_pipelines) as pool:
             return list(pool.map(lambda item: self.execute(item.id), created))
 
@@ -152,8 +153,9 @@ class WorkflowEngine:
         direction: str,
         hypothesis: Hypothesis,
         evidence: list[Evidence],
+        run_id: str | None = None,
     ) -> ResearchRun:
-        run_id = f"{hypothesis.id}-{uuid.uuid4().hex[:6]}"
+        run_id = run_id or f"{hypothesis.id}-{uuid.uuid4().hex[:6]}"
         run = ResearchRun(
             id=run_id,
             title=hypothesis.title,
@@ -171,6 +173,32 @@ class WorkflowEngine:
             }
         )
         return self.runs.save(run)
+
+    def _load_or_search_evidence(self, direction: str, path: Path) -> list[Evidence]:
+        cached = read_json(path)
+        if cached:
+            return [Evidence.model_validate(item) for item in cached]
+        return self.literature.search(direction, path)
+
+    def _load_or_generate_ideas(
+        self,
+        direction: str,
+        evidence: list[Evidence],
+        max_ideas: int | None,
+        batch: str,
+    ) -> list[Hypothesis]:
+        index_path = self.workspace.cache / f"{batch}-ideas.json"
+        cached = read_json(index_path)
+        if cached:
+            return [Hypothesis.model_validate(item) for item in cached]
+        ideas = self.hypotheses.generate(
+            direction,
+            evidence,
+            max_ideas or self.config.workflow.max_ideas_per_cycle,
+            self.workspace.ideas,
+        )
+        atomic_write_json(index_path, [item.model_dump(mode="json") for item in ideas])
+        return ideas
 
     def _run_experiments(
         self,

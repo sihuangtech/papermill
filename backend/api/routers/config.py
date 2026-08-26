@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from backend.api.dependencies import ProcessManagerDep, RuntimeDep, refresh_runtime
 from backend.core.config import AppConfig, save_config
+from backend.core.runtime import RuntimeMode
 
 router = APIRouter(tags=["config"])
 
@@ -22,6 +23,8 @@ def update_config(
     runtime: RuntimeDep,
     manager: ProcessManagerDep,
 ) -> dict:
+    if runtime.context.mode is RuntimeMode.CLOUD:
+        raise HTTPException(status_code=403, detail="云端工作流配置由服务器管理员管理")
     merged = _deep_merge(runtime.config.model_dump(mode="json"), payload)
     try:
         config = AppConfig.model_validate(merged)

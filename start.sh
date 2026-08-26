@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-PROJECT_PYTHON="${PAPERMILL_PYTHON:-.venv/bin/python}"
+PROJECT_PYTHON="${AGENTIC_RESEARCH_PYTHON:-.venv/bin/python}"
 
 if [[ ! -x "$PROJECT_PYTHON" ]]; then
-  echo "未找到项目 Python。请先执行 README 中的 python -m venv 和 pip install 命令。" >&2
+  echo "未找到项目 Python。请先执行 uv sync。" >&2
   exit 1
 fi
 

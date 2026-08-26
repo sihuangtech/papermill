@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "研序",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "identifier": "cn.skstudio.papermill",
   "build": {
     "frontendDist": "../frontend/dist",

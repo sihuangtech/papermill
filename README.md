@@ -1,8 +1,8 @@
-# Agentic Research: Local, Auditable AI Research Agent
+# Agentic Research: Cloud or Local, Auditable Research Agent
 
 Agentic Research connects evidence discovery, falsifiable hypotheses, experiment planning, real Python or Notebook execution, held-out validation, and research writing in a resumable autonomous research workflow. It treats generated claims as hypotheses to test, not as scientific results.
 
-[中文文档](README.zh.md)
+[中文文档](README.zh.md) · [Changelog](CHANGELOG.md)
 
 ## What you can do with it
 
@@ -28,7 +28,7 @@ Use the Tauri desktop app, CLI, or Web console to see progress, live logs, metri
 
 ### Use your own model provider
 
-OpenAI, Anthropic Claude, and Google Gemini are supported. Each provider has its own Base URL, model ID, and API key. OpenAI can use either the Responses API or the traditional Chat Completions-compatible interface, including compatible gateways that provide the selected interface.
+Model execution is unified on the OpenAI Agents SDK. OpenAI uses the native Responses or Chat Completions model path; Anthropic Claude and Google Gemini use the SDK's LiteLLM adapter. Each provider still has its own Base URL, model ID, and API key.
 
 ## Operating boundaries
 
@@ -55,15 +55,8 @@ Research direction
 Python 3.10+ and Node.js 20+ are required. Install dependencies only through the official package-manager commands:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e '.[dev]'
-
-cd frontend
-npm ci
-cd ..
-
+uv sync --extra dev
+npm --prefix frontend ci
 cp .env.example .env
 ```
 
@@ -74,7 +67,7 @@ npm install
 npm --prefix frontend install
 ```
 
-OpenAI, Anthropic Claude, and Google Gemini each support a Base URL, model ID, and API key through the Web settings page or their provider-prefixed environment variables. OpenAI can use either the traditional Chat Completions-compatible interface or the Responses API. Keys are stored only in the Git-ignored local `.env` and are never returned by the API.
+The desktop settings page can save provider credentials to its local, Git-ignored `.env`. In cloud mode the page is read-only: a server administrator supplies provider-prefixed environment variables so regular web users cannot modify global credentials. Keys are never returned by the API.
 
 The defaults are `gpt-5.6-terra` through the Responses API, `claude-sonnet-5`, and `gemini-3.5-flash`. For a third-party compatibility gateway, use only model IDs and API modes exposed by that gateway.
 
@@ -83,9 +76,9 @@ The defaults are `gpt-5.6-terra` through the Responses API, `claude-sonnet-5`, a
 Run diagnostics and the real-process offline demo before configuring an external model:
 
 ```bash
-python -m backend.cli doctor
-python -m backend.cli demo
-python -m pytest
+uv run python -m backend.cli doctor
+uv run python -m backend.cli demo
+uv run pytest
 ```
 
 The demo launches 12 isolated child processes and stores its auditable artifacts under `data/workspace/runs/`.
@@ -93,12 +86,12 @@ The demo launches 12 isolated child processes and stores its auditable artifacts
 ## Research commands
 
 ```bash
-python -m backend.cli run --direction "Reliable few-shot medical image segmentation" --max-ideas 2
-python -m backend.cli status
-python -m backend.cli approve <run_id>
-python -m backend.cli resume <run_id>
-python -m backend.cli cancel <run_id>
-python -m backend.cli daemon
+uv run python -m backend.cli run --direction "Reliable few-shot medical image segmentation" --max-ideas 2
+uv run python -m backend.cli status
+uv run python -m backend.cli approve <run_id>
+uv run python -m backend.cli resume <run_id>
+uv run python -m backend.cli cancel <run_id>
+uv run python -m backend.cli daemon
 ```
 
 With the default configuration, a new run pauses at `waiting_review` before generated experiment code executes.
@@ -111,7 +104,7 @@ Build the frontend and start the local API/static server:
 ./start.sh
 ```
 
-Open `http://127.0.0.1:8000`.
+Open the port configured by `BACKEND_PORT` (the example `.env` uses `http://127.0.0.1:4019`).
 
 ## Tauri desktop app
 

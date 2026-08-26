@@ -4,25 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sk-agentic-research"
-version = "0.2.0"
-description = "A local, auditable AI research workflow with held-out experiment validation"
+version = "0.3.0"
+description = "A cloud-or-local auditable AI research workflow with held-out validation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "GPL-3.0-only"
-authors = [{name = "Papermill Contributors"}]
+authors = [{name = "SK Studio"}]
 dependencies = [
-  "anthropic>=0.40",
   "arxiv>=2.1",
+  "dbos>=2.31.0",
   "fastapi>=0.115",
-  "google-genai>=1.0",
   "ipykernel>=6.29",
   "matplotlib>=3.8",
-  "openai>=1.60",
+  "openai-agents[litellm]>=0.22.0",
   "papermill>=2.6",
   "psutil>=6.0",
   "pydantic>=2.10",
   "python-dotenv>=1.0",
-  "PyYAML>=6.0",
+  "pyyaml>=6.0",
   "requests>=2.32",
   "sse-starlette>=2.1",
   "uvicorn[standard]>=0.34",
@@ -38,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-ai-papermill = "backend.cli:main"
+agentic-research = "backend.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["backend*"]

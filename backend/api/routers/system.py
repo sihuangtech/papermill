@@ -9,8 +9,12 @@ router = APIRouter(tags=["system"])
 
 
 @router.get("/system/status")
-def status(manager: ProcessManagerDep) -> dict:
-    return {"status": manager.status, "pid": manager.pid}
+def status(manager: ProcessManagerDep, runtime: RuntimeDep) -> dict:
+    return {
+        "status": manager.status,
+        "pid": manager.pid,
+        "runtime": runtime.context.public_dict(),
+    }
 
 
 @router.post("/system/start")
@@ -27,4 +31,4 @@ def stop(manager: ProcessManagerDep) -> dict:
 
 @router.get("/system/doctor")
 def doctor(runtime: RuntimeDep) -> dict:
-    return diagnose(runtime.config)
+    return diagnose(runtime.config, runtime.context)

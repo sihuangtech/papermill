@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from backend.api.process_manager import OrchestratorProcess
+from backend.workflow.durable import DurableDispatcher, dispatcher
 from backend.workflow.factory import Runtime, build_runtime
 
 
@@ -24,5 +25,10 @@ def get_process_manager() -> OrchestratorProcess:
     return OrchestratorProcess()
 
 
+def get_dispatcher() -> DurableDispatcher:
+    return dispatcher
+
+
 RuntimeDep = Annotated[Runtime, Depends(get_runtime)]
 ProcessManagerDep = Annotated[OrchestratorProcess, Depends(get_process_manager)]
+DispatcherDep = Annotated[DurableDispatcher, Depends(get_dispatcher)]

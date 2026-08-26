@@ -5,6 +5,9 @@
     "tagline": "本地科研工作台",
     "documentTitle": "研序｜自主科研智能体工作台",
     "safetyNotice": "本地执行生成代码仍有风险。正式实验建议放入独立容器。",
+    "safetyDesktop": "研究文件与实验均留在此设备；仅模型和文献接口需要联网。",
+    "safetyCloud": "研究与实验运行在服务器；模型调用由服务器统一发起。",
+    "primaryNavigation": "主导航",
     "language": "界面语言",
     "languageChinese": "中文",
     "languageEnglish": "英文",
@@ -12,6 +15,16 @@
     "themeSystem": "跟随系统",
     "themeLight": "浅色",
     "themeDark": "深色"
+  },
+  "runtime": {
+    "cloud": "云端 Agent",
+    "desktop": "本地桌面 Agent",
+    "detecting": "识别运行位置",
+    "detectingHint": "正在连接科研运行时",
+    "server": "计算与文件位于服务器",
+    "local_device": "计算与文件留在本机",
+    "detail_cloud": "Agent、实验和产物在服务器运行；可恢复队列：{{database}}。",
+    "detail_desktop": "除外部模型与文献 API 外，Agent、实验和产物均在本机；可恢复队列：{{database}}。"
   },
   "nav": {
     "dashboard": "科研总览",
@@ -58,9 +71,12 @@
     "improvement": "改进量",
     "successRate": "成功率",
     "offlineDemo": "离线验证演示"
+    ,"progress": "科研阶段进度"
   },
   "dashboard": {
     "eyebrow": "本地科研控制台",
+    "eyebrow_cloud": "服务器科研控制台",
+    "eyebrow_desktop": "本机科研控制台",
     "title": "科研工作流总览",
     "description": "这里展示真实运行状态、留出验证指标和结论门禁，不再根据文件是否存在猜测进度。",
     "start": "启动",
@@ -79,6 +95,10 @@
     "submit": "提交研究",
     "reviewHint": "默认会在实验执行前暂停，等待你审核计划和生成代码。",
     "environment": "环境检查",
+    "runtimeLedger": "运行账本",
+    "actionRequired": "需要你审核",
+    "recentRuns": "研究卷宗",
+    "emptyTitle": "工作台还没有研究卷宗",
     "healthy": "正常",
     "optionalMissing": "可选缺失",
     "needsAttention": "需要处理",
@@ -116,6 +136,7 @@
   "providers": {
     "title": "模型供应商",
     "description": "支持 OpenAI、Anthropic Claude 和 Google Gemini。密钥只写入本地 .env，接口不会返回明文。",
+    "cloudManaged": "云端供应商凭据只从服务器环境变量读取，网页不会提供修改入口。",
     "savedRestarted": "已保存，调度器已重启",
     "saved": "已保存并立即生效",
     "keyConfigured": "密钥已配置",
@@ -142,6 +163,8 @@
     "eyebrow": "已验证配置",
     "title": "系统设置",
     "description": "保存时后端会验证种子隔离、阈值范围和资源上限；持续调度正在运行时会自动重启使新配置生效。",
+    "cloudManaged": "当前是云端 Agent。为避免普通网页用户修改全局密钥和实验策略，此页只读；请由服务器管理员通过环境变量和 config.yaml 管理。",
+    "serverManaged": "服务器管理",
     "saving": "保存中",
     "save": "保存配置",
     "savedRestarted": "配置已保存，持续调度已自动重启",

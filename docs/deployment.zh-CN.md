@@ -5,7 +5,7 @@
 1. 网站版：部署到服务器，通过 `https://agenticresearch.skstudio.cn` 访问；
 2. 桌面版：在 macOS、Windows 或 Linux 上构建 Tauri 安装包，由用户在本机运行。
 
-当前后端是 FastAPI，前端是 React/Vite。网站版使用 Python 虚拟环境、systemd 和 Nginx 运行，桌面版使用 Tauri 2 启动 Python sidecar。两种版本共用同一套科研工作流和前端代码。
+当前后端是 FastAPI + DBOS，模型运行时使用 OpenAI Agents SDK，前端是 React/Vite。网站版使用 uv、systemd 和 Nginx 运行，桌面版使用 Tauri 2 启动 Python sidecar。两种版本共用同一套科研工作流和前端代码。
 
 ## 一、网站版部署
 
@@ -28,11 +28,12 @@ dig +short agenticresearch.skstudio.cn
 
 ### 2. 服务器准备
 
-以下示例以 Ubuntu 22.04/24.04 为例。服务器需要 Python 3.10 以上、Node.js 20/22、Git 和 Nginx：
+以下示例以 Ubuntu 22.04/24.04 为例。服务器需要 Python 3.10 以上、Node.js、Git、Nginx 和 uv：
 
 ```bash
 sudo apt update
-sudo apt install -y git nginx python3 python3-venv python3-pip nodejs npm
+sudo apt install -y curl git nginx python3 nodejs npm
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 检查版本：
@@ -54,15 +55,13 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-编辑 `.env`，保留 `BACKEND_PORT=4019`，并至少配置实际使用的模型服务密钥。不要把 `.env` 提交到 Git。
+编辑 `.env`，保留 `BACKEND_PORT=4019` 和 `AGENTIC_RUNTIME_MODE=cloud`，并至少配置实际使用的模型服务密钥。单机部署可使用工作区内 SQLite；多实例部署必须设置 `DBOS_SYSTEM_DATABASE_URL` 指向 PostgreSQL。不要把 `.env` 提交到 Git。
 
 ### 4. 安装依赖并构建网站
 
 ```bash
 cd /var/www/sk-agentic-research
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install .
+uv sync --no-dev
 npm --prefix frontend ci
 npm --prefix frontend run build
 mkdir -p backend/static
@@ -318,12 +317,10 @@ sudo tar -czf /var/backups/agentic-research-workspace-$(date +%Y%m%d-%H%M%S).tar
 
 ### 1. 安装构建依赖
 
-要求：Python 3.10+、Node.js 20+、Rust stable，以及当前操作系统所需的 Tauri 2 构建依赖。依赖使用官方命令安装：
+要求：Python 3.10+、Node.js、Rust stable、uv，以及当前操作系统所需的 Tauri 2 构建依赖。依赖使用官方命令安装：
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e '.[dev]'
+uv sync --extra dev
 npm install
 npm --prefix frontend install
 ```

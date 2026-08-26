@@ -102,6 +102,7 @@ def main() -> int:
     _prepare_data_dir(data_dir)
     _write_embedded_kernel_spec(data_dir)
     os.environ["PAPERMILL_DESKTOP_MODE"] = "1"
+    os.environ["AGENTIC_RUNTIME_MODE"] = "desktop"
     os.environ["PAPERMILL_DESKTOP_TOKEN"] = args.token
     os.environ.setdefault("MPLBACKEND", "Agg")
     os.environ.setdefault("MPLCONFIGDIR", str(data_dir / "matplotlib"))
@@ -112,7 +113,13 @@ def main() -> int:
     from backend.api.webapp import create_app
 
     # SSE 的查询令牌不应出现在 access log 中。
-    uvicorn.run(create_app(), host=args.host, port=args.port, log_level="info", access_log=False)
+    uvicorn.run(
+        create_app(enable_durable=True),
+        host=args.host,
+        port=args.port,
+        log_level="info",
+        access_log=False,
+    )
     return 0
 
 

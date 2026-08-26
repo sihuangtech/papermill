@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api, apiError } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import ProviderSettings from '../components/ProviderSettings';
+import type { SystemStatus } from '../types';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -11,8 +12,14 @@ export default function SettingsPage() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [newDirection, setNewDirection] = useState('');
+  const [system, setSystem] = useState<SystemStatus | null>(null);
 
-  useEffect(() => { api.get('/config').then(({ data }) => setConfig(data)).catch((error) => setMessage(apiError(error))); }, []);
+  useEffect(() => {
+    Promise.all([api.get('/config'), api.get('/system/status')])
+      .then(([configResponse, systemResponse]) => { setConfig(configResponse.data); setSystem(systemResponse.data); })
+      .catch((error) => setMessage(apiError(error)));
+  }, []);
+  const cloudManaged = system?.runtime?.mode === 'cloud';
   const update = (section, key, value) => setConfig((current) => ({ ...current, [section]: { ...current[section], [key]: value } }));
   const save = async () => {
     setBusy(true); setMessage('');
@@ -30,10 +37,12 @@ export default function SettingsPage() {
   if (!config) return <div className="p-20 text-center text-slate-500">{t('settings.loading')}</div>;
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} actions={<button disabled={busy} onClick={save} className="action-primary"><Save size={16} />{busy ? t('settings.saving') : t('settings.save')}</button>} />
+      <PageHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} description={t('settings.description')} actions={<button disabled={busy || cloudManaged} onClick={save} className="action-primary"><Save size={16} />{cloudManaged ? t('settings.serverManaged') : busy ? t('settings.saving') : t('settings.save')}</button>} />
       {message && <p className="mb-5 rounded-xl border border-white/10 bg-white/5 p-3 text-sm">{message}</p>}
       <div className="space-y-5">
-        <ProviderSettings />
+        {cloudManaged && <p className="notice-strip rounded-xl border px-4 py-3 text-sm leading-6">{t('settings.cloudManaged')}</p>}
+        <ProviderSettings editable={!cloudManaged} />
+        <fieldset disabled={cloudManaged} className="min-w-0 space-y-5 border-0 p-0 disabled:opacity-70">
         <Section title={t('settings.modelReview')}>
           <Field label={t('settings.generationProvider')}><ProviderSelect value={config.llm.provider} onChange={(value) => update('llm', 'provider', value)} /></Field>
           <Field label={t('settings.reviewProvider')}><ProviderSelect value={config.llm.reviewer_provider} onChange={(value) => update('llm', 'reviewer_provider', value)} /></Field>
@@ -59,6 +68,7 @@ export default function SettingsPage() {
           <div className="mb-4 flex flex-wrap gap-2">{config.research_directions.map((item) => <span key={item} className="flex items-center gap-2 rounded-full bg-white/5 px-3 py-2 text-xs">{item}<button aria-label={t('settings.removeDirection', { direction: item })} title={t('settings.removeDirection', { direction: item })} onClick={() => setConfig({ ...config, research_directions: config.research_directions.filter((value) => value !== item) })}><X size={13} /></button></span>)}</div>
           <div className="flex gap-2"><input className="input flex-1" value={newDirection} onChange={(event) => setNewDirection(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && (event.preventDefault(), addDirection())} placeholder={t('settings.addDirection')} /><button onClick={addDirection} className="action-secondary"><Plus size={15} />{t('settings.add')}</button></div>
         </section>
+        </fieldset>
       </div>
     </div>
   );

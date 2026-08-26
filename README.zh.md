@@ -1,8 +1,8 @@
 # 研序：自主科研智能体工作台
 
-研序（Agentic Research）将文献证据、可证伪假设、实验计划、真实代码/Notebook 执行、留出验证和研究报告连接成一条可恢复的本地科研智能体工作流。它不把“模型生成了一段实验结果”视为科研，也不会因为候选方案跑通一次就宣布假设成立。
+研序（Agentic Research）将文献证据、可证伪假设、实验计划、真实代码/Notebook 执行、留出验证和研究报告连接成一条可恢复的科研智能体工作流。它既可作为服务器上的云端 Web Agent，也可作为除外部模型/文献 API 外全部在本机运行的桌面 Agent。
 
-[English documentation](README.md)
+[English documentation](README.md) · [更新日志](CHANGELOG.zh.md)
 
 ## 你可以用它做什么
 
@@ -22,13 +22,13 @@
 
 运行完成后可生成 Markdown、LaTeX 和可选 PDF 报告。报告引用来自本次保存的证据快照，并附带实验结果和限制说明；验证未通过时会明确标注，不会包装成正面结论。
 
-### 5. 在本机管理全过程
+### 5. 在云端或本机管理全过程
 
-可通过桌面应用、命令行或 Web 控制台查看研究进度、实时日志、实验指标、假设、报告和待审批计划。桌面界面支持简体中文和英文，首次启动跟随系统语言，并记住用户手动选择；外观可跟随系统，也可固定为浅色或深色。中断的任务可以恢复，也可以取消；桌面版将运行产物保存在应用的本地数据目录，Web/CLI 版仍使用项目内的 `data/workspace/`。
+可通过桌面应用、命令行或 Web 控制台查看研究进度、实时日志、实验指标、假设、报告和待审批计划。云端版由服务器执行 Agent、检索和实验；桌面版由本机 sidecar 执行同一套共享核心，研究文件不上传到研序服务器。DBOS 负责长任务恢复，科研状态文件负责审计每个已完成阶段。
 
 ### 6. 选择自己的大模型服务
 
-支持 OpenAI、Anthropic Claude 和 Google Gemini。每个服务都可单独配置 Base URL、模型 ID 和 API Key；OpenAI 可选择 Responses API 或传统 Chat Completions 兼容接口，因此也能接入提供相应接口的兼容网关。
+模型运行时统一使用 OpenAI Agents SDK。OpenAI 走 SDK 原生 Responses/Chat Completions，Anthropic Claude 和 Google Gemini 走 SDK 的 LiteLLM 适配层；每个服务仍可单独配置 Base URL、模型 ID 和 API Key。
 
 ## 工作方式与边界
 
@@ -62,14 +62,8 @@
 要求 Python 3.10+、Node.js 20+。所有依赖均通过官方包管理器命令安装。
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e '.[dev]'
-
-cd frontend
-npm ci
-cd ..
+uv sync --extra dev
+npm --prefix frontend ci
 ```
 
 只使用 Web/CLI 时，上述依赖已经足够。开发桌面版还需要安装 Rust stable 和 [Tauri 2 的系统依赖](https://v2.tauri.app/start/prerequisites/)，然后在项目根目录安装 Tauri 依赖：
@@ -85,7 +79,7 @@ npm --prefix frontend install
 cp .env.example .env
 ```
 
-支持 OpenAI、Anthropic Claude 和 Google Gemini。三者都可以在 Web 设置页依次填写 Base URL、模型 ID 和 API Key；OpenAI 还能选择传统 Chat Completions 兼容接口或 Responses API。配置写入对应的 `OPENAI_*`、`ANTHROPIC_*`、`GOOGLE_*` 环境变量，密钥不会由接口返回。
+桌面版可在设置页填写 Base URL、模型 ID 和 API Key，配置写入应用数据目录的 `.env`。云端网页只读，供应商凭据由服务器管理员设置 `OPENAI_*`、`ANTHROPIC_*`、`GOOGLE_*` 环境变量；密钥不会由接口返回。
 
 默认模型为 `gpt-5.6-terra`（Responses API）、`claude-sonnet-5` 和 `gemini-3.5-flash`。使用第三方兼容网关时，应以该网关实际开放的模型 ID 和接口模式为准。
 
@@ -96,9 +90,9 @@ cp .env.example .env
 先做不会访问模型和网络的环境诊断与真实实验演示：
 
 ```bash
-python -m backend.cli doctor
-python -m backend.cli demo
-python -m pytest
+uv run python -m backend.cli doctor
+uv run python -m backend.cli demo
+uv run pytest
 ```
 
 `demo` 会实际运行 3 个开发种子和 3 个留出种子下的基线/候选实验，共 12 个独立子进程，并在 `data/workspace/runs/` 保存审计产物。
@@ -106,27 +100,27 @@ python -m pytest
 ## 启动一项研究
 
 ```bash
-python -m backend.cli run --direction "小样本医学影像分割的可靠性" --max-ideas 2
-python -m backend.cli status
+uv run python -m backend.cli run --direction "小样本医学影像分割的可靠性" --max-ideas 2
+uv run python -m backend.cli status
 ```
 
 默认配置会在规划完成后进入 `waiting_review`：
 
 ```bash
-python -m backend.cli approve <run_id>
+uv run python -m backend.cli approve <run_id>
 ```
 
 失败后可恢复，未完成运行可取消：
 
 ```bash
-python -m backend.cli resume <run_id>
-python -m backend.cli cancel <run_id>
+uv run python -m backend.cli resume <run_id>
+uv run python -m backend.cli cancel <run_id>
 ```
 
 需要持续探索配置中的研究方向时：
 
 ```bash
-python -m backend.cli daemon
+uv run python -m backend.cli daemon
 ```
 
 ## Web 控制台
@@ -135,7 +129,7 @@ python -m backend.cli daemon
 ./start.sh
 ```
 
-浏览器打开 `http://127.0.0.1:8000`。控制台提供运行状态、真实指标、假设、研究报告、实时日志、配置校验和人工审批。
+浏览器打开 `.env` 中 `BACKEND_PORT` 对应的地址（示例为 `http://127.0.0.1:4019`）。控制台提供运行状态、真实指标、假设、研究报告、实时日志和人工审批；云端全局配置由服务器管理员管理。
 
 ## Tauri 桌面应用
 

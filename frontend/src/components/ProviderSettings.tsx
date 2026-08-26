@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, apiError } from '../api/client';
 
-export default function ProviderSettings() {
+export default function ProviderSettings({ editable = true }: { editable?: boolean }) {
   const { t } = useTranslation();
   const [providers, setProviders] = useState([]);
   const [message, setMessage] = useState('');
@@ -22,19 +22,19 @@ export default function ProviderSettings() {
     <section className="panel">
       <div className="mb-5">
         <h2 className="text-lg font-bold">{t('providers.title')}</h2>
-        <p className="mt-2 text-xs leading-5 text-slate-500">{t('providers.description')}</p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">{editable ? t('providers.description') : t('providers.cloudManaged')}</p>
       </div>
       {message && <p className="mb-4 rounded-xl bg-rose-300/10 p-3 text-sm text-rose-200">{message}</p>}
       <div className="grid gap-4 lg:grid-cols-3">
         {providers.map((provider) => (
-          <ProviderCard key={provider.id} provider={provider} onSaved={updateProvider} />
+          <ProviderCard key={provider.id} provider={provider} onSaved={updateProvider} editable={editable} />
         ))}
       </div>
     </section>
   );
 }
 
-function ProviderCard({ provider, onSaved }) {
+function ProviderCard({ provider, onSaved, editable }) {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState(provider.base_url || '');
@@ -68,15 +68,15 @@ function ProviderCard({ provider, onSaved }) {
       </div>
       <label className="mb-3 block space-y-2 text-xs font-bold text-slate-400">
         <span>{t('providers.baseUrl')}</span>
-        <input type="url" className="input" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://..." />
+        <input disabled={!editable} type="url" className="input" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://..." />
       </label>
       <label className="mb-3 block space-y-2 text-xs font-bold text-slate-400">
         <span>{t('providers.modelId')}</span>
-        <input className="input" value={modelId} onChange={(event) => setModelId(event.target.value)} placeholder={t('providers.modelPlaceholder')} />
+        <input disabled={!editable} className="input" value={modelId} onChange={(event) => setModelId(event.target.value)} placeholder={t('providers.modelPlaceholder')} />
       </label>
       {provider.id === 'openai' && <label className="mb-3 block space-y-2 text-xs font-bold text-slate-400">
         <span>{t('providers.apiMode')}</span>
-        <select className="input" value={apiMode} onChange={(event) => setApiMode(event.target.value)}>
+        <select disabled={!editable} className="input" value={apiMode} onChange={(event) => setApiMode(event.target.value)}>
           <option value="chat_completions">{t('providers.chatCompletions')}</option>
           <option value="responses">{t('providers.responses')}</option>
         </select>
@@ -84,10 +84,10 @@ function ProviderCard({ provider, onSaved }) {
       </label>}
       <label className="block space-y-2 text-xs font-bold text-slate-400">
         <span>{t('providers.apiKey')}</span>
-        <input type="password" autoComplete="new-password" className="input" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider.api_key_configured ? t('providers.replaceKey') : t('providers.enterKey')} />
+        <input disabled={!editable} type="password" autoComplete="new-password" className="input" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider.api_key_configured ? t('providers.replaceKey') : t('providers.enterKey')} />
       </label>
       {message && <p className="mt-3 text-xs text-cyan-200">{message}</p>}
-      <button disabled={busy} onClick={save} className="action-secondary mt-4 w-full justify-center"><Save size={14} />{busy ? t('providers.saving') : t('providers.save')}</button>
+      <button disabled={busy || !editable} onClick={save} className="action-secondary mt-4 w-full justify-center"><Save size={14} />{editable ? busy ? t('providers.saving') : t('providers.save') : t('settings.serverManaged')}</button>
     </article>
   );
 }

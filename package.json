@@ -1,7 +1,7 @@
 {
-  "name": "papermill",
-  "version": "0.2.0",
-  "description": "研序 Agentic Research - local-first autonomous research agent desktop application",
+  "name": "sk-agentic-research",
+  "version": "0.3.0",
+  "description": "Cloud-or-local autonomous research agent for auditable scientific workflows",
   "directories": {
     "doc": "docs",
     "test": "tests"

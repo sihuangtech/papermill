@@ -2,7 +2,7 @@
 
 ## 目标
 
-桌面版保留现有 React/Vite 界面和 FastAPI 科研工作流，不复制前端、不把业务逻辑重写成 Rust。Tauri 负责原生窗口、应用生命周期、本地数据目录和 sidecar 管理；Python 继续负责文献、Agent、实验、Notebook 与报告。
+桌面版保留 React/Vite 界面和 FastAPI 科研工作流，不复制前端、不把业务逻辑重写成 Rust。Tauri 负责原生窗口、应用生命周期、本地数据目录和 sidecar 管理；Python 中的 OpenAI Agents SDK 负责模型运行时，DBOS 使用本地 SQLite 恢复长任务，科研核心继续负责文献、实验、Notebook 与报告。
 
 ```text
 Tauri 2 / Rust 主进程
@@ -61,7 +61,7 @@ Tauri 安装包必须在目标操作系统上分别构建。macOS 产出 `.app`/
 
 ## 数据与升级
 
-首次启动会将默认 `config.yaml` 和 `prompts.yaml` 复制到系统应用数据目录，此后不覆盖用户修改。模型密钥由设置页写入同一目录的 `.env`，研究产物位于其 `data/workspace/` 下。
+首次启动会将默认 `config.yaml` 和 `prompts.yaml` 复制到系统应用数据目录，此后不覆盖用户修改。模型密钥由设置页写入同一目录的 `.env`，研究产物位于其 `data/workspace/` 下，DBOS 的 SQLite 文件位于工作区 `cache/`。除外部模型与文献 API 外，这些计算和文件都留在用户设备。
 
 典型位置：
 

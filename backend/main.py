@@ -8,7 +8,7 @@ from backend.api.webapp import create_app
 
 load_dotenv()
 
-app = create_app()
+app = create_app(enable_durable=True)
 
 
 if __name__ == "__main__":

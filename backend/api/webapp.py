@@ -2,6 +2,8 @@
 
 import os
 import secrets
+from contextlib import asynccontextmanager
+from importlib.metadata import version
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -10,7 +12,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from backend.api.dependencies import get_runtime
 from backend.api.routers import artifacts, config, logs, providers, runs, system
+from backend.workflow.durable import dispatcher
 
 
 class DesktopTokenMiddleware(BaseHTTPMiddleware):
@@ -26,11 +30,23 @@ class DesktopTokenMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-def create_app() -> FastAPI:
+def create_app(*, enable_durable: bool = False) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        if enable_durable:
+            dispatcher.configure(get_runtime().context)
+            dispatcher.launch()
+        try:
+            yield
+        finally:
+            if enable_durable:
+                dispatcher.shutdown()
+
     app = FastAPI(
-        title="Papermill Local Research API",
-        version="0.2.0",
-        description="可恢复、可验证的本地 AI 科研自动化工作流",
+        title="Agentic Research API",
+        version=version("sk-agentic-research"),
+        description="Recoverable and verifiable AI research workflow shared by cloud and desktop runtimes",
+        lifespan=lifespan,
     )
     app.add_middleware(DesktopTokenMiddleware)
     app.add_middleware(

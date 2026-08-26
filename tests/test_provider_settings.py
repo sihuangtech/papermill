@@ -1,8 +1,12 @@
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
 
+from backend.api.dependencies import get_runtime
 from backend.api.routers import providers
 from backend.api.webapp import create_app
 from backend.core.provider_settings import PROVIDER_ENV, ProviderSettingsStore
+from backend.core.runtime import RuntimeContext, RuntimeMode
 
 
 def test_missing_provider_settings_remain_empty(tmp_path) -> None:
@@ -41,7 +45,17 @@ def test_all_providers_persist_keys_and_custom_base_urls(tmp_path) -> None:
 def test_provider_api_never_returns_key_and_rejects_invalid_url(tmp_path, monkeypatch) -> None:
     store = ProviderSettingsStore(tmp_path / ".env", {})
     monkeypatch.setattr(providers, "store", store)
-    client = TestClient(create_app())
+    app = create_app()
+    app.dependency_overrides[get_runtime] = lambda: SimpleNamespace(
+        context=RuntimeContext(
+            mode=RuntimeMode.DESKTOP,
+            compute_location="local_device",
+            storage_location="local_device",
+            provider_settings_mutable=True,
+            durable_database_url="sqlite:///test.sqlite",
+        )
+    )
+    client = TestClient(app)
 
     response = client.put(
         "/api/v1/providers/openai",

@@ -4,9 +4,10 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 
-from backend.api.dependencies import ProcessManagerDep
+from backend.api.dependencies import ProcessManagerDep, RuntimeDep
 from backend.api.schemas import ProviderCredentialUpdate
 from backend.core.provider_settings import ProviderSettingsStore
+from backend.core.runtime import RuntimeMode
 
 router = APIRouter(tags=["providers"])
 store = ProviderSettingsStore()
@@ -22,7 +23,10 @@ def update_provider(
     provider: Literal["openai", "anthropic", "google"],
     payload: ProviderCredentialUpdate,
     manager: ProcessManagerDep,
+    runtime: RuntimeDep,
 ) -> dict:
+    if runtime.context.mode is RuntimeMode.CLOUD:
+        raise HTTPException(status_code=403, detail="云端模型凭据由服务器环境变量管理")
     try:
         result = store.update(
             provider,
