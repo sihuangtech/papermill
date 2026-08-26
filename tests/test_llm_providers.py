@@ -46,8 +46,9 @@ def test_openai_rejects_missing_api_mode(monkeypatch) -> None:
     _openai_environment(monkeypatch)
     monkeypatch.delenv("OPENAI_API_MODE")
 
+    client = llm.AgentsSdkLlmClient("gpt-test", 100, "openai")
     with pytest.raises(RuntimeError, match="OPENAI_API_MODE"):
-        llm.AgentsSdkLlmClient("gpt-test", 100, "openai").sdk_model
+        _ = client.sdk_model
 
 
 def test_provider_configuration_is_lazy_until_first_model_use(monkeypatch) -> None:
